@@ -28,6 +28,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Text _scoreText;
     [SerializeField] private List<GameObject> AvailableBuffIconsList = new List<GameObject>();
     [SerializeField] private Vector2 _buffAnchor = new Vector2(0.0f, 0.0f);
+    [SerializeField] private float _buffAnchorSpacing = 1.0f;
     private List<GameObject> _iconCache = new List<GameObject>();
     private List<ActiveBuffIconsList> _activeBuffIconsList = new List<ActiveBuffIconsList>();
     
@@ -120,7 +121,7 @@ public class UIManager : MonoBehaviour
         {
             _iconCache[i].gameObject.GetComponentInChildren<Text>().text = (BuffManager.Instance.ActiveBuffsList[i].Duration - (Time.time - BuffManager.Instance.ActiveBuffsList[i].ActivationTime)).ToString("0");
             _iconCache[i].SetActive(true);
-            _iconCache[i].transform.position = _buffAnchor - 1.0f * new Vector2(0.0f, 1.0f);
+            _iconCache[i].transform.position = _buffAnchor - (_buffAnchorSpacing * new Vector2(0.0f, 1.0f));
         }
     }
 
