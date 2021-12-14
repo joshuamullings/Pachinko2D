@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Ball : MonoBehaviour
 {
+    [SerializeField] public int PointsMultiplier = 1;
+
     [SerializeField] private float _impluseForce = 10.0f;
 
     private void Awake()
@@ -20,8 +22,15 @@ public class Ball : MonoBehaviour
     {
         if (collider.CompareTag("Kill Zone"))
         {
-            Destroy(this.gameObject, 0.0f);
-            BallManager.Instance.CurrentBalls--;
+            if (this.CompareTag("Extra Ball"))
+            {
+                Destroy(this.gameObject, 0.0f);
+            }
+            else
+            {
+                Destroy(this.gameObject, 0.0f);
+                BallManager.Instance.CurrentBalls--;
+            }
         }
     }
 }

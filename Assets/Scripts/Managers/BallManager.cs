@@ -24,19 +24,30 @@ public class BallManager : MonoBehaviour
 
     #endregion
 
+    [SerializeField] private int _maximumBalls = 1;
+    [SerializeField] private float _autoSpawnDelay = 2.0f;
     private Transform _ballsTransform;
     private Transform _boardTransform;
     private GameObject _ball;
+    private GameObject _extraBall;
     private GameObject _spawnPoint;
 
     public int CurrentBalls { get; set; } = 0;
-    public int MaximumBalls { get; set; } = 3;
+    public int MaximumBalls { get => _maximumBalls; set => _maximumBalls = value; }
+    public float AutoSpawnDelay { get => _autoSpawnDelay; set => _autoSpawnDelay = value; }
+
+    public void SpawnBallBuff(Vector2 position)
+    {
+        GameObject gameObject = Instantiate(_extraBall, position, Quaternion.identity);
+        gameObject.transform.SetParent(_ballsTransform);
+    }
 
     private void Start()
     {
         _ballsTransform = GameObject.FindWithTag("Balls").transform;
         _boardTransform = GameObject.FindWithTag("Board").transform;
-        _ball = (GameObject)Resources.Load("Ball");
+        _ball       = (GameObject)Resources.Load("Ball");
+        _extraBall  = (GameObject)Resources.Load("Extra Ball");
         _spawnPoint = (GameObject)Resources.Load("Spawn Point");
     }
 

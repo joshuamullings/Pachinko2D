@@ -13,6 +13,9 @@ TagManager:
   - Spawn Point
   - Buffs
   - Peg
+  - Extra Ball
+  - Icons
+  - Points Ball
   layers:
   - Default
   - TransparentFX

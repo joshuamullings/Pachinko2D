@@ -24,80 +24,32 @@ public class UIManager : MonoBehaviour
         }
 
     #endregion
-
-    [SerializeField] private Text _scoreText;
-    [SerializeField] private List<GameObject> AvailableBuffIconsList = new List<GameObject>();
-    [SerializeField] private Vector2 _buffAnchor = new Vector2(0.0f, 0.0f);
-    [SerializeField] private float _buffAnchorSpacing = 1.0f;
-    private List<GameObject> _iconCache = new List<GameObject>();
-    private List<ActiveBuffIconsList> _activeBuffIconsList = new List<ActiveBuffIconsList>();
     
+    [SerializeField] private Text _scoreText;
+    [SerializeField] private List<GameObject> _buffTimers = new List<GameObject>();
+    private List<BuffDetails> _buffDetails = new List<BuffDetails>();
+
     public int Score { get; set; } = 0;
 
-    public void BuffListener(int ID, float duration)
+    public void UpdateRemainingDurations(float[] durations)
     {
-        int i = 0;
-        bool alreadyExists = false;
-
-        // loop through current active buffs
-        for (; i < _activeBuffIconsList.Count; i++)
+        for (int i = 0; i < _buffDetails.Count; i++)
         {
-            // check if buff already exists in list
-            if (_activeBuffIconsList[i].BuffID == ID)
-            {
-                alreadyExists = true;
-                break;
-            }
-        }
-
-        if (alreadyExists)
-        {
-            // update duration if so
-            _activeBuffIconsList[i].Duration = duration;
-        }
-        else
-        {
-            // else add to list
-            _activeBuffIconsList.Add(
-                new ActiveBuffIconsList(
-                    i, BuffManager.Instance.ActiveBuffsList[i].Duration - (Time.time - BuffManager.Instance.ActiveBuffsList[i].ActivationTime)
-                )
-            );
-        }
-    }
-
-    public void BuffListenerDisable(int ID, float duration)
-    {
-        // loop through current active buffs
-        for (int i = 0; i < _activeBuffIconsList.Count; i++)
-        {
-            // find the buff in the list
-            if (_activeBuffIconsList[i].BuffID == ID)
-            {
-                _iconCache[ID].SetActive(false);
-                _activeBuffIconsList.RemoveAt(i);
-                _activeBuffIconsList.TrimExcess();
-            }
+            _buffDetails[i] = new BuffDetails(_buffDetails[i].Buff, durations[i]);
         }
     }
 
     private void Start()
     {
-        // sort the active buffs list by duration
-        _activeBuffIconsList.Sort((x, y) => x.Duration.CompareTo(y.Duration));
+        // populate buff details list
+        List<Buff> buffList = BuffManager.Instance.AvailableBuffsList;
+        float[] endTimes = BuffManager.Instance.BuffEndTimes;
 
-        if (AvailableBuffIconsList.Count == BuffManager.Instance.AvailableBuffsList.Count)
+        for (int i = 0; i < buffList.Count; i++)
         {
-            for (int i = 0; i < AvailableBuffIconsList.Count; i++)
-            {
-                GameObject icon = Instantiate(AvailableBuffIconsList[i], Vector3.zero, Quaternion.identity);
-                icon.SetActive(false);
-                _iconCache.Add(icon);
-            }
-        }
-        else
-        {
-            Debug.Log("Mismatch between available buffs and buff icons!");
+            _buffDetails.Add(
+                new BuffDetails(buffList[i], endTimes[i])
+            );
         }
     }
 
@@ -114,32 +66,43 @@ public class UIManager : MonoBehaviour
 
     private void RenderBuffs()
     {
-        // sort the active buffs list by duration
-        _activeBuffIconsList.Sort((x, y) => x.Duration.CompareTo(y.Duration));
-
-        for (int i = 0; i < _activeBuffIconsList.Count; i++)
+        for (int i = 0; i < _buffDetails.Count; i++)
         {
-            _iconCache[i].gameObject.GetComponentInChildren<Text>().text = (BuffManager.Instance.ActiveBuffsList[i].Duration - (Time.time - BuffManager.Instance.ActiveBuffsList[i].ActivationTime)).ToString("0");
-            _iconCache[i].SetActive(true);
-            _iconCache[i].transform.position = _buffAnchor - (_buffAnchorSpacing * new Vector2(0.0f, 1.0f));
+            if (_buffDetails[i].Buff.Timed)
+            {
+                if (_buffDetails[i].RemainingDuration > 0.0f)
+                {
+                    UpdateBuffAlpha(i, 1.0f, _buffDetails[i].RemainingDuration.ToString("0"));
+                }
+                else
+                {
+                    UpdateBuffAlpha(i, 0.2f, "");
+                }
+            }
         }
     }
 
-    private void OnDrawGizmos()
+    private void UpdateBuffAlpha(int i, float alpha, string text)
     {
-        Gizmos.color = Color.green;
-        Gizmos.DrawSphere(_buffAnchor, 0.1f);
+        _buffTimers[i].GetComponentInChildren<SpriteRenderer>().color = new Color(1.0f, 1.0f, 1.0f, alpha);
+        _buffTimers[i].GetComponentInChildren<Text>().color = new Color(1.0f, 1.0f, 1.0f, alpha);
+        _buffTimers[i].GetComponentInChildren<Text>().text = text;
     }
 
-    public class ActiveBuffIconsList
+    private struct BuffDetails
     {
-        public float Duration { get; set; }
-        public int BuffID { get; set; }
+        public Buff Buff { get; set; }
+        public float RemainingDuration { get; set; }
 
-        public ActiveBuffIconsList(int buffID, float duration)
+        public BuffDetails(Buff buff, float endTime)
         {
-            BuffID = buffID;
-            Duration = duration;
+            Buff = buff;
+            RemainingDuration = endTime - Time.time;
+
+            if (RemainingDuration < 0.0f)
+            {
+                RemainingDuration = 0.0f;
+            }
         }
     }
 }

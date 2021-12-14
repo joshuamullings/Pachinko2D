@@ -24,26 +24,22 @@ public class BuffManager : MonoBehaviour
 
     #endregion
 
-    public List<Buff> AvailableBuffsList;
-    public List<ActiveBuffs> ActiveBuffsList = new List<ActiveBuffs>();
+    public List<Buff> AvailableBuffsList = new List<Buff>();
+    [HideInInspector] public List<Buff> ActiveBuffsList = new List<Buff>();
+    [HideInInspector] public float[] BuffEndTimes; // 0.0f indicates buff is inactive or expired
 
     [SerializeField] private Rect _spawnBounds;
     [SerializeField] private float _spawnRadiusCheck = 0.5f;
     [SerializeField] private float _spawnScaleCheck = 0.4f;
     [SerializeField] private float _timeBetweenSpawns = 20.0f;
     private float _timeSinceLastSpawn;
+    [SerializeField] private float _timebetweenActiveBuffsCheck = 1.0f;
+    private float _timeSinceActiveBuffsCheck;
 
     private void Start()
     {
-        // build active buffs list
-        for (int i = 0; i < AvailableBuffsList.Count; i++)
-        {
-            ActiveBuffs newBuff = new ActiveBuffs(
-                AvailableBuffsList[i], i
-            );
-
-            ActiveBuffsList.Add(newBuff);
-        }
+        EventManager.Instance.OnBuffCollected += OnBuffCollected;
+        BuffEndTimes = new float[AvailableBuffsList.Count];
     }
 
     private void Update()
@@ -53,19 +49,9 @@ public class BuffManager : MonoBehaviour
             SpawnBuff();
         }
 
-        // loop through all buffs
-        for (int i = 0; i < ActiveBuffsList.Count; i++)
+        if (Time.time - _timeSinceActiveBuffsCheck > _timebetweenActiveBuffsCheck)
         {
-            // check which are active
-            if (ActiveBuffsList[i].IsActive)
-            {
-                // check if the active time is more than the duration
-                if ((Time.time - ActiveBuffsList[i].ActivationTime) > ActiveBuffsList[i].Duration)
-                {
-                    // deactivate if exceeding duration
-                    ActiveBuffsList[i].DeactivateBuff();
-                }
-            }
+            UpdateActiveBuffs();
         }
     }
 
@@ -87,9 +73,7 @@ public class BuffManager : MonoBehaviour
             Quaternion.identity
         );
 
-        // setup the buff index
-        _spawnedBuff.BuffID = buffIndex;
-
+        _spawnedBuff.ID = buffIndex;
         _spawnedBuff.transform.SetParent(GameObject.FindWithTag("Buffs").transform);
         _timeSinceLastSpawn = Time.time;
     }
@@ -136,6 +120,56 @@ public class BuffManager : MonoBehaviour
         return overlap;
     }
 
+    private void OnBuffCollected(Buff buff)
+    {
+        // only timed buffs are dealt with
+        if (buff.Timed)
+        {
+            // if it's not already active
+            if (BuffEndTimes[buff.ID] == 0.0f)
+            {
+                BuffEndTimes[buff.ID] = Time.time + buff.Duration;
+                ActiveBuffsList.Add(buff);
+            }
+            // else it's alreadu active
+            else
+            {
+                BuffEndTimes[buff.ID] += buff.Duration;
+                Destroy(buff.gameObject);
+            }
+        }
+    }
+
+    private void UpdateActiveBuffs()
+    {
+        if (ActiveBuffsList.Count > 0)
+        {
+            // check and cache buffs to be removed
+            List<Buff> toBeRemoved = new List<Buff>();
+
+            foreach (Buff buff in ActiveBuffsList)
+            {
+                if (BuffEndTimes[buff.ID] <= Time.time)
+                {
+                    toBeRemoved.Add(buff);
+                }
+            }
+
+            // remove buffs using the cached list
+            foreach (Buff buff in toBeRemoved)
+            {
+                buff.RemoveEffect();
+                ActiveBuffsList.Remove(buff);
+                BuffEndTimes[buff.ID] = 0.0f;
+            }
+
+            ActiveBuffsList.TrimExcess();
+        }
+
+        UIManager.Instance.UpdateRemainingDurations(BuffEndTimes);
+        _timeSinceActiveBuffsCheck = Time.time;
+    }
+
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
@@ -143,41 +177,5 @@ public class BuffManager : MonoBehaviour
             new Vector2(_spawnBounds.x, _spawnBounds.y),
             new Vector2(_spawnBounds.x + _spawnBounds.width, _spawnBounds.y + _spawnBounds.height)
         );
-    }
-
-    public class ActiveBuffs
-    {
-        public Buff _buff;
-        public int BuffID { get; set; }
-        public bool IsActive { get; set; } = false;
-        public float ActivationTime { get; set; } = 0.0f;
-        public float Duration { get; set; } = 0.0f;
-
-        public ActiveBuffs(Buff buff, int buffID)
-        {
-            _buff = buff;
-            BuffID = buffID;
-        }
-
-        public void ActivateBuff(float duration)
-        {
-            if (!IsActive)
-            {
-                ActivationTime = Time.time;
-            }
-
-            IsActive = true;
-            Duration += duration;
-            UIManager.Instance.BuffListener(BuffID, Duration);
-        }
-
-        public void DeactivateBuff()
-        {
-            _buff.RemoveEffect();
-            ActivationTime = 0.0f;
-            Duration = 0.0f;
-            IsActive = false;
-            UIManager.Instance.BuffListenerDisable(BuffID, Duration);
-        }
     }
 }

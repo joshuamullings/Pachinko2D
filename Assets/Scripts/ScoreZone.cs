@@ -15,9 +15,10 @@ public class ScoreZone : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collider)
     {
-        if (collider.CompareTag("Ball"))
+        if (collider.CompareTag("Ball") || collider.CompareTag("Extra Ball"))
         {
-            UIManager.Instance.Score += _zoneValue;
+            UIManager.Instance.Score +=
+                _zoneValue * collider.GetComponent<Ball>().PointsMultiplier;
         }
     }
 }

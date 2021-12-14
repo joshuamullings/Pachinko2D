@@ -24,10 +24,10 @@ public class SpawnPoint : MonoBehaviour
 
     #endregion
 
+    private BallManager _ballManager;
     private Transform _ballsTransform;
     private GameObject _ball;
     private float _timeSinceLastSpawn;
-    private float _timeBetweenSpawns = 1.0f;
 
     public void UpdatePosition(Vector2 position)
     {
@@ -36,13 +36,14 @@ public class SpawnPoint : MonoBehaviour
 
     private void Start()
     {
+        _ballManager = BallManager.Instance;
         _ballsTransform = GameObject.FindWithTag("Balls").transform;
         _ball = (GameObject)Resources.Load("Ball");
     }
 
     private void Update()
     {
-        if (Time.time - _timeSinceLastSpawn > _timeBetweenSpawns)
+        if (Time.time - _timeSinceLastSpawn > _ballManager.AutoSpawnDelay)
         {
             SpawnBall();
         }
@@ -50,11 +51,11 @@ public class SpawnPoint : MonoBehaviour
 
     private void SpawnBall()
     {
-        if (BallManager.Instance.CurrentBalls < BallManager.Instance.MaximumBalls)
+        if (_ballManager.CurrentBalls < _ballManager.MaximumBalls)
         {
             GameObject gameObject = Instantiate(_ball, transform.position, Quaternion.identity);
             gameObject.transform.SetParent(_ballsTransform);
-            BallManager.Instance.CurrentBalls++;
+            _ballManager.CurrentBalls++;
             _timeSinceLastSpawn = Time.time;
         }
     }

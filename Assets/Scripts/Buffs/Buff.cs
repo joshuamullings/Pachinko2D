@@ -1,25 +1,26 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public abstract class Buff : MonoBehaviour
 {
-    [SerializeField] protected float _buffDuration;
+    [SerializeField] private float _duration;
+    [SerializeField] private bool _timed;
 
-    public int BuffID { get; set; }
+    public int ID { get; set; }
+    public float Duration { get => _duration; set => _duration = value; }
+    public bool Timed { get => _timed; set => _timed = value; }
 
     public abstract void RemoveEffect();
-
-    protected abstract void ApplyEffect();
     
+    protected abstract void ApplyEffect(Collider2D collider = null);
+
     private void OnTriggerEnter2D(Collider2D collider)
     {
-        if (collider.CompareTag("Ball"))
+        if (collider.CompareTag("Ball") || collider.CompareTag("Extra Ball"))
         {
-            ApplyEffect();
-            BuffManager.Instance.ActiveBuffsList[BuffID].ActivateBuff(_buffDuration);
-            Destroy(this.gameObject);
+            EventManager.Instance.BuffCollected(this);
+            ApplyEffect(collider);
         }
     }
 }
