@@ -13,6 +13,6 @@ public class Buff_Timed_IncreaseGravity : Buff
     {
         this.GetComponent<SpriteRenderer>().enabled = false;
         this.GetComponent<CircleCollider2D>().enabled = false;
-        Physics2D.gravity = new Vector2(0.0f, -20.0f);
+        Physics2D.gravity = GameManager.Instance.GravityScale;
     }
 }

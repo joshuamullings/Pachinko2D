@@ -4,9 +4,10 @@ using UnityEngine;
 
 public class Ball : MonoBehaviour
 {
-    [SerializeField] public int PointsMultiplier = 1;
-
     [SerializeField] private float _impluseForce = 10.0f;
+    private int _pointsMultiplier = 1;
+
+    public int PointsMultiplier { get => _pointsMultiplier; set => _pointsMultiplier = value; }
 
     private void Awake()
     {
@@ -28,8 +29,8 @@ public class Ball : MonoBehaviour
             }
             else
             {
-                Destroy(this.gameObject, 0.0f);
                 BallManager.Instance.CurrentBalls--;
+                Destroy(this.gameObject, 0.0f);
             }
         }
     }
